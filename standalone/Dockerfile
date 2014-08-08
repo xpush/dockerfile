@@ -75,11 +75,13 @@ CMD ["mongod"]
 
 
 # Expose ports.
-#   - 27017: mongodb process
-#   - 28017: mongodb http
-#   - 8000: xpush session server
-#   - 9000: xpush channel server
+#   - 27017 : mongodb process
+#   - 28017 : mongodb http
+#   - 6379  : redis process
+#   - 8000  : xpush session server
+#   - 9000  : xpush channel server
 EXPOSE 27017
 EXPOSE 28017
+EXPOSE 6379
 EXPOSE 8000
 EXPOSE 9000
