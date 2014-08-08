@@ -9,8 +9,8 @@ FROM    centos:centos6
 # Install packages
 RUN \
   yum -y update  && \
-  yum -y groupinstall "Development Tools"
-  yum install -y wget
+  yum -y groupinstall "Development Tools" && \
+  yum -y install wget
 
 
 # Install node.js
@@ -39,8 +39,20 @@ RUN \
   sed -i 's/^\(dir .*\)$/# \1\ndir \/data/' /etc/redis/redis.conf && \
   sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
 
+# Install mongodb
+RUN \
+echo -e "\
+[mongodb]\n\
+name=MongoDB Repository\n\
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
+gpgcheck=0\n\
+enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
+
+RUN yum -y install mongodb-org && mkdir -p /data/db
+
 # Install imagemagick
-RUN sudo yum install ImageMagick-c++ ImageMagick-c++-devel
+RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
+
 
 # Define mountable directories.
 VOLUME ["/data"]
@@ -48,5 +60,26 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
-EXPOSE  8000
-EXPOSE  9000
+# Run XPUSH Servers
+RUN \
+  npm install -g xpush forever && \
+  cd /usr/local/lib/node_modules/xpush && \
+  forever start ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session && \
+  forever start ./bin/xpush --config ./config-blank.json --port 9000 --data /data
+
+# Run redis
+CMD ["redis-server", "/etc/redis/redis.conf"]
+
+# Run mongodb
+CMD ["mongod"]
+
+
+# Expose ports.
+#   - 27017: mongodb process
+#   - 28017: mongodb http
+#   - 8000: xpush session server
+#   - 9000: xpush channel server
+EXPOSE 27017
+EXPOSE 28017
+EXPOSE 8000
+EXPOSE 9000
