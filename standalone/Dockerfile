@@ -60,19 +60,18 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
-# Run XPUSH Servers
-RUN \
-  npm install -g xpush forever && \
-  cd /usr/local/lib/node_modules/xpush && \
-  forever start ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session && \
-  forever start ./bin/xpush --config ./config-blank.json --port 9000 --data /data
-
 # Run redis
 CMD ["redis-server", "/etc/redis/redis.conf"]
 
 # Run mongodb
 CMD ["mongod"]
 
+# Run XPUSH Servers
+RUN \
+  npm install -g xpush forever && \
+  cd /usr/local/lib/node_modules/xpush && \
+  forever start ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session && \
+  forever start ./bin/xpush --config ./config-blank.json --port 9000 --data /data
 
 # Expose ports.
 #   - 27017 : mongodb process
