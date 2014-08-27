@@ -16,7 +16,7 @@ RUN \
 echo -e "\
 [nginx]\n\
 name=nginx repo\n\
-baseurl=http://nginx.org/packages/centos/$releasever/$basearch/\n\
+baseurl=http://nginx.org/packages/centos/6/x86_64/\n\
 gpgcheck=0\n\
 enabled=1\n" >> /etc/yum.repos.d/nginx.repo
 
