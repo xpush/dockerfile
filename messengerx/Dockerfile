@@ -8,8 +8,16 @@ FROM    centos:centos6
 
 # Install packages
 RUN yum -y update
-  
+
 # install nginx
+RUN \
+echo -e "\
+[nginx]\n\
+name=nginx repo\n\
+baseurl=http://nginx.org/packages/centos/$releasever/$basearch/\n\
+gpgcheck=0\n\
+enabled=1\n" >> /etc/yum.repos.d/nginx.repo
+
 RUN yum -y install nginx
 
 # tell Nginx to stay foregrounded

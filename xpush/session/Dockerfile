@@ -22,6 +22,9 @@ RUN \
   make && \
   make install
 
+# Install imagemagick
+RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
+
 # Define mountable directories.
 VOLUME ["/data"]
 
