@@ -1,7 +1,7 @@
 #
 # XPush standalone (all-in-one) Dockerfile
 #
-# https://github.com/xpush/dockerfile/channel-server
+# https://github.com/xpush/dockerfile/standalone
 #
 
 FROM    centos:centos6
