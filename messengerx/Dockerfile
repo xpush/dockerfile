@@ -7,7 +7,9 @@
 FROM    centos:centos6
 
 # Install packages
-RUN yum -y update
+RUN \
+  yum -y update  && \
+  yum -y groupinstall "Development Tools"
 
 # install nginx
 RUN \
