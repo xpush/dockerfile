@@ -1,7 +1,7 @@
 #
 # XPush standalone (all-in-one) Dockerfile
 #
-# https://github.com/xpush/dockerfile/standalone
+# https://github.com/xpush/dockerfile/xpush/all
 #
 
 FROM    centos:centos6
@@ -15,9 +15,9 @@ RUN \
 
 # Install node.js
 RUN \
-  wget http://nodejs.org/dist/v0.10.30/node-v0.10.30.tar.gz && \
-  tar zxf node-v0.10.30.tar.gz && \
-  cd node-v0.10.30 && \
+  wget http://nodejs.org/dist/v0.10.31/node-v0.10.31.tar.gz && \
+  tar zxf node-v0.10.31.tar.gz && \
+  cd node-v0.10.31 && \
   ./configure && \
   make && \
   make install
@@ -48,7 +48,7 @@ baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
 gpgcheck=0\n\
 enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
 
-RUN yum -y install mongodb-org && mkdir -p /data/db
+RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir data/logs
 
 # Install imagemagick
 RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
@@ -60,18 +60,22 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
-# Run redis
-CMD ["redis-server", "/etc/redis/redis.conf"]
-
-# Run mongodb
-CMD ["mongod"]
-
 # Run XPUSH Servers
+RUN export USER=root && export HOME=/data && npm install -g xpush forever
+
+# Make start-xpush.sh
+
 RUN \
-  npm install -g xpush forever && \
+  echo -e "\
+  nohup redis-server /etc/redis/redis.conf > /data/logs/redis.log &\n\
+  nohup mongod --smallfiles > /data/logs/mongo.log &\n\
   cd /usr/local/lib/node_modules/xpush && \
-  forever start ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session && \
-  forever start ./bin/xpush --config ./config-blank.json --port 9000 --data /data
+  nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/logs/session.log &\n\
+  ./bin/xpush --config ./config-blank.json --port 9000 --data /data &" > /usr/bin/start-xpush.sh
+
+RUN chmod 775 /usr/bin/start-xpush.sh
+
+CMD start-xpush.sh
 
 # Expose ports.
 #   - 27017 : mongodb process
