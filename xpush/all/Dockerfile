@@ -8,9 +8,10 @@ FROM    centos:centos6
 
 # Install packages
 RUN \
-  yum -y update  && \
-  yum -y groupinstall "Development Tools" && \
-  yum -y install wget
+  yum -y install wget && \
+  yum -y install tar && \
+  yum -y install gcc && \
+  yum -y install gcc-c++
 
 # Install java
 RUN yum -y install java-1.7.0-openjdk.x86_64
@@ -22,8 +23,7 @@ RUN \
   wget http://apache.mirror.cdnetworks.com/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz && \
   tar xvf zookeeper-3.4.6.tar.gz && \
   mkdir -p /etc/zookeeper && \
-  cp zookeeper-3.4.6/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg && \
-  ln -s zookeeper-3.4.6/bin/zkServer.sh /usr/local/bin/zkServer.sh
+  cp zookeeper-3.4.6/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg
 
 # Install node.js
 RUN \
@@ -60,7 +60,7 @@ baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
 gpgcheck=0\n\
 enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
 
-RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir data/log
+RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir -p /data/log
 
 # Install imagemagick
 RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
