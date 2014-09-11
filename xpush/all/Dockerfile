@@ -12,6 +12,18 @@ RUN \
   yum -y groupinstall "Development Tools" && \
   yum -y install wget
 
+# Install java
+RUN yum -y install java-1.7.0-openjdk.x86_64
+
+# Install zookeeper
+RUN \
+  mkdir -p /home/root && \
+  cd /home/root && \
+  wget http://apache.mirror.cdnetworks.com/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz && \
+  tar xvf zookeeper-3.4.6.tar.gz && \
+  mkdir -p /etc/zookeeper && \
+  cp zookeeper-3.4.6/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg && \
+  ln -s zookeeper-3.4.6/bin/zkServer.sh /usr/local/bin/zkServer.sh
 
 # Install node.js
 RUN \
@@ -48,11 +60,10 @@ baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
 gpgcheck=0\n\
 enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
 
-RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir data/logs
+RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir data/log
 
 # Install imagemagick
 RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
-
 
 # Define mountable directories.
 VOLUME ["/data"]
@@ -67,15 +78,18 @@ RUN export USER=root && export HOME=/data && npm install -g xpush forever
 
 RUN \
   echo -e "\
-  nohup redis-server /etc/redis/redis.conf > /data/logs/redis.log &\n\
-  nohup mongod --smallfiles > /data/logs/mongo.log &\n\
-  cd /usr/local/lib/node_modules/xpush && \
-  nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/logs/session.log &\n\
-  ./bin/xpush --config ./config-blank.json --port 9000 --data /data &" > /usr/bin/start-xpush.sh
+  #!/bin/bash\n\
+  cd /home/root/zookeeper-3.4.6/bin\n\
+  ./zkServer.sh start /etc/zookeeper/zoo.cfg\n\
+  nohup redis-server /etc/redis/redis.conf > /data/log/redis.log &\n\
+  nohup mongod --smallfiles > /data/log/mongo.log &\n\
+  cd /usr/local/lib/node_modules/xpush \n\
+  nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/log/session.log &\n\
+  ./bin/xpush --config ./config-blank.json --port 9000 --data /data" > /usr/bin/startXpush.sh
 
-RUN chmod 775 /usr/bin/start-xpush.sh
+RUN chmod 775 /usr/bin/startXpush.sh
 
-CMD start-xpush.sh
+CMD startXpush.sh
 
 # Expose ports.
 #   - 27017 : mongodb process
@@ -83,8 +97,10 @@ CMD start-xpush.sh
 #   - 6379  : redis process
 #   - 8000  : xpush session server
 #   - 9000  : xpush channel server
+#   - 2181  : zookeeper port
 EXPOSE 27017
 EXPOSE 28017
 EXPOSE 6379
 EXPOSE 8000
 EXPOSE 9000
+EXPOSE 2181
