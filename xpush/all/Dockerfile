@@ -83,7 +83,7 @@ RUN \
   ./zkServer.sh start /etc/zookeeper/zoo.cfg\n\
   nohup redis-server /etc/redis/redis.conf > /data/log/redis.log &\n\
   nohup mongod --smallfiles > /data/log/mongo.log &\n\
-  sleep 7
+  sleep 7 \n\
   cd /usr/local/lib/node_modules/xpush \n\
   nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/log/session.log &\n\
   ./bin/xpush --config ./config-blank.json --port 9000 --data /data" > /usr/bin/startXpush.sh
