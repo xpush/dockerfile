@@ -21,4 +21,4 @@ This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node
 
 #### Run `xpush standalone` with persistent data directory( /home/stalk/data )
 
-	docker run -d -p 8000:8000 -p 9000:9000 -v /data:/data --name xpush stalk/xpush:standalone
+	docker run -d -p 8000:8000 -p 9000:9000 -v /home/stalk/data:/data --name xpush stalk/xpush:standalone

@@ -10,17 +10,17 @@ This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node
 
 2. Download [trusted build](https://registry.hub.docker.com/u/stalk/xpush/) from public [Docker Registry](https://registry.hub.docker.com/): `docker pull stalk/xpush`
 
-(alternatively, you can build an image from Dockerfile: `docker build -t="stalk/xpush" https://raw.githubusercontent.com/xpush/dockerfile/master/xpush/single/Dockerfile`)
+   (alternatively, you can build an image from Dockerfile: `docker build -t="stalk/xpush" https://raw.githubusercontent.com/xpush/dockerfile/master/xpush/single/Dockerfile`)
 
 ### Usage
 
 Create a config file in user directory ( name like `session.json` and `channel.json`)
 
-[More info](http://xpush.github.io/doc/configuration/) from xpush.github.io
+[More configuration info](http://xpush.github.io/doc/configuration/) from xpush.github.io
 
 #### Run session server
 
-##### 1. Run with xpush executable. ( You can run session server with your own options.)
+##### 1. Run with xpush executable ( You can run the server with your own options.)
 
 	docker run -i -t -p 8000:8000 -v /home/stalk/data:/data stalk/xpush:latest xpush --config /data/session.json --session --port 8000
 
@@ -34,7 +34,7 @@ Create a config file in user directory ( name like `session.json` and `channel.j
 
 #### Run channel server
 
-##### Run with xpush executable
+##### Run with xpush executable ( You can run the server with your own options.)
 
 	docker run -i -t -p 9000:9000 -v /home/stalk/data:/data stalk/xpush:latest xpush --config /data/channel.json --port 9000
 
