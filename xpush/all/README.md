@@ -10,7 +10,7 @@ This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node
 
 2. Download [trusted build](https://registry.hub.docker.com/u/stalk/xpush/) from public [Docker Registry](https://registry.hub.docker.com/): `docker pull stalk/xpush:standalone`
 
-(alternatively, you can build an image from Dockerfile: `docker build -t="stalk/xpush:standalone" https://raw.githubusercontent.com/xpush/dockerfile/master/xpush/all/Dockerfile`)
+   (alternatively, you can build an image from Dockerfile: `docker build -t="stalk/xpush:standalone" https://raw.githubusercontent.com/xpush/dockerfile/master/xpush/all/Dockerfile`)
 
 
 ### Usage
