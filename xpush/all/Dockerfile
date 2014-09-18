@@ -71,26 +71,56 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
-# Run XPUSH Servers
+# Install XPUSH Servers
 RUN export USER=root && export HOME=/data && npm install -g xpush forever
 
-# Make start-xpush.sh
+# Make xpush-stand-alone.sh
 
 RUN \
-  echo -e "\
-  #!/bin/bash\n\
-  cd /home/root/zookeeper-3.4.6/bin\n\
-  ./zkServer.sh start /etc/zookeeper/zoo.cfg\n\
-  nohup redis-server /etc/redis/redis.conf > /data/log/redis.log &\n\
-  nohup mongod --smallfiles > /data/log/mongo.log &\n\
-  sleep 7 \n\
-  cd /usr/local/lib/node_modules/xpush \n\
-  nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/log/session.log &\n\
-  ./bin/xpush --config ./config-blank.json --port 9000 --data /data" > /usr/bin/startXpush.sh
+printf "\
+#!/usr/bin/env bash \n\
+#Start zookeeper \n\
+cd /home/root/zookeeper-3.4.6/bin && \n\
+./zkServer.sh start /etc/zookeeper/zoo.cfg \n\
+# Start redis \n\
+nohup redis-server /etc/redis/redis.conf > /data/log/redis.log 2>&1 < /dev/null & \n\
+\n\
+# Check redis is running \n\
+echo -ne \"Starting redis \" \n\
+REDIS_PROCESS_NUM=\$(netstat -nap | grep 6379 | grep redis | wc -l) \n\
+while [ \$REDIS_PROCESS_NUM -eq 0 ] \n\
+do\n\
+  echo -n .\n\
+  REDIS_PROCESS_NUM=\$(netstat -nap | grep 6379 | grep redis | wc -l)\n\
+  sleep 1\n\
+done\n\
+echo \"  STARTED\"\n\
+\n\
+# Start mongo\n\
+nohup mongod --smallfiles > /data/log/mongo.log 2>&1 < /dev/null &\n\
+\n\
+# Check mongo is running\n\
+echo -ne \"\\\nStarting mongodb \"\n\
+MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
+while [ \$MONGO_PROCESS_NUM -eq 0 ]\n\
+do\n\
+  echo -n .\n\
+  MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
+  sleep 1\n\
+done\n\
+echo \"  STARTED\"\n\
+\n\
+# Start xpush\n\
+cd /usr/local/lib/node_modules/xpush\n\
+nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/log/session.log 2>&1 < /dev/null &\n\
+nohup ./bin/xpush --config ./config-blank.json --port 9000 --data /data > /data/log/channel.log 2>&1 < /dev/null &\n\
+echo -ne \"\\\nTailing log\"\n\
+sleep 1\n\
+tail -f /data/log/channel.log" > /usr/bin/xpush-stand-alone.sh
 
-RUN chmod 775 /usr/bin/startXpush.sh
+RUN chmod 775 /usr/bin/xpush-stand-alone.sh
 
-CMD startXpush.sh
+CMD xpush-stand-alone.sh
 
 # Expose ports.
 #   - 27017 : mongodb process
