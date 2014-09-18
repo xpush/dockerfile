@@ -20,11 +20,11 @@ Create a config file in user directory ( name like `session.json` and `channel.j
 
 #### Run session server
 
-	1. Run with xpush executable. ( You can run session server with your own options.)
+##### 1. Run with xpush executable. ( You can run session server with your own options.)
 
 		docker run -i -t -p 8000:8000 -v /home/stalk/data:/data stalk/xpush:latest xpush --config /data/session.json --session --port 8000
 
-	2. Run with already installed shell script
+##### 2. Run with already installed shell script
 
 		docker run -d -p 8000:8000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash -c xpush-session.sh
 
@@ -34,11 +34,11 @@ Create a config file in user directory ( name like `session.json` and `channel.j
 
 #### Run channel server
 
-	1. Run with xpush executable
+##### Run with xpush executable
 
 		docker run -i -t -p 9000:9000 -v /home/stalk/data:/data stalk/xpush:latest xpush --config /data/channel.json --port 9000
 
-	2. Run with already installed shell script
+##### Run with already installed shell script
 
     docker run -d -p 9000:9000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash -c xpush-channel.sh
 
