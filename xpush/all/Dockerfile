@@ -103,7 +103,7 @@ nohup mongod --smallfiles > /data/log/mongo.log 2>&1 < /dev/null &\n\
 echo -ne \"\\\nStarting mongodb \"\n\
 MAX_SEC=60\n\
 WATING_SEC=0\n\
-HOST=\$2
+HOST=\$2\n\
 MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
 while [ \$WATING_SEC -le \$MAX_SEC -a \$MONGO_PROCESS_NUM -eq 0 ]\n\
 do\n\
