@@ -101,19 +101,30 @@ nohup mongod --smallfiles > /data/log/mongo.log 2>&1 < /dev/null &\n\
 \n\
 # Check mongo is running\n\
 echo -ne \"\\\nStarting mongodb \"\n\
+MAX_SEC=60\n\
+WATING_SEC=0\n\
+HOST=\$2
 MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
-while [ \$MONGO_PROCESS_NUM -eq 0 ]\n\
+while [ \$WATING_SEC -le \$MAX_SEC -a \$MONGO_PROCESS_NUM -eq 0 ]\n\
 do\n\
   echo -n .\n\
   MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
   sleep 1\n\
+  WATING_SEC=$((WATING_SEC + 1))\n\
 done\n\
 echo \"  STARTED\"\n\
 \n\
+# Set HOST\n\
+if [ \"\$1\" == \"--host\" -a -n \"\$2\" ]\n\
+then\n\
+  HOST=$(echo \"--host \$HOST\")\n\
+else\n\
+  HOST=\"\"\n\
+fi\n\
 # Start xpush\n\
 cd /usr/local/lib/node_modules/xpush\n\
-nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session > /data/log/session.log 2>&1 < /dev/null &\n\
-nohup ./bin/xpush --config ./config-blank.json --port 9000 --data /data > /data/log/channel.log 2>&1 < /dev/null &\n\
+nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session \$HOST > /data/log/session.log 2>&1 < /dev/null &\n\
+nohup ./bin/xpush --config ./config-blank.json --port 9000 --data /data \$HOST > /data/log/channel.log 2>&1 < /dev/null &\n\
 echo -ne \"\\\nTailing log\"\n\
 sleep 1\n\
 tail -f /data/log/channel.log" > /usr/bin/xpush-stand-alone.sh
