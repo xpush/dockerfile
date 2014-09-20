@@ -100,10 +100,8 @@ echo \"  STARTED\"\n\
 nohup mongod --smallfiles > /data/log/mongo.log 2>&1 < /dev/null &\n\
 \n\
 # Set HOST\n\
-echo ARGUMENTS \$#\n\
 while [ \"\$1\" != \"\" ]\n\
 do\n\
-  echo -n \"\$1 \" \n\
   case \$1 in\n\
     -h | --host ) shift && HOST=\$1\n\
       ;;\n\
@@ -114,13 +112,13 @@ echo\n\
 if [ -n \"\$HOST\" ]\n\
 then\n\
   HOST=$(echo \"--host \$HOST\")\n\
-  echo Runnging Host is \$HOST\n\
+  echo Run with options : \$HOST\n\
 else\n\
   HOST=\"\"\n\
 fi\n\
 # Check mongo is running\n\
 echo -ne \"\\\nStarting mongodb \"\n\
-MAX_SEC=60\n\
+MAX_SEC=30\n\
 WATING_SEC=0\n\
 MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
 while [ \$WATING_SEC -le \$MAX_SEC -a \$MONGO_PROCESS_NUM -eq 0 ]\n\
@@ -128,7 +126,7 @@ do\n\
   echo -n .\n\
   MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
   sleep 1\n\
-  WATING_SEC=$((WATING_SEC + 1))\n\
+  WATING_SEC=\$((WATING_SEC + 1))\n\
 done\n\
 echo \"  STARTED\"\n\
 \n\
