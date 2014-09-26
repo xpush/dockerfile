@@ -27,9 +27,9 @@ RUN \
 
 # Install node.js
 RUN \
-  wget http://nodejs.org/dist/v0.10.31/node-v0.10.31.tar.gz && \
-  tar zxf node-v0.10.31.tar.gz && \
-  cd node-v0.10.31 && \
+  wget http://nodejs.org/dist/v0.10.32/node-v0.10.32.tar.gz && \
+  tar zxf node-v0.10.32.tar.gz && \
+  cd node-v0.10.32 && \
   ./configure && \
   make && \
   make install
@@ -71,8 +71,11 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
+# Install node-gyp
+RUN export USER=root && npm install -g node-gyp
+
 # Install XPUSH Servers
-RUN export USER=root && export HOME=/data && npm install -g xpush forever
+RUN export USER=root && npm install -g xpush forever
 
 # Make xpush-stand-alone.sh
 
@@ -140,7 +143,7 @@ tail -f /data/log/channel.log" > /usr/bin/xpush-stand-alone.sh
 
 RUN chmod 775 /usr/bin/xpush-stand-alone.sh
 
-CMD xpush-stand-alone.sh
+CMD /usr/bin/xpush-stand-alone.sh
 
 # Expose ports.
 #   - 27017 : mongodb process
@@ -149,9 +152,11 @@ CMD xpush-stand-alone.sh
 #   - 8000  : xpush session server
 #   - 9000  : xpush channel server
 #   - 2181  : zookeeper port
+#   - 22 : SSH PORT
 EXPOSE 27017
 EXPOSE 28017
 EXPOSE 6379
 EXPOSE 8000
 EXPOSE 9000
 EXPOSE 2181
+EXPOSE 22

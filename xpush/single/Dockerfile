@@ -15,9 +15,9 @@ RUN \
 
 # Install node.js
 RUN \
-  wget http://nodejs.org/dist/v0.10.31/node-v0.10.31.tar.gz && \
-  tar zxf node-v0.10.31.tar.gz && \
-  cd node-v0.10.31 && \
+  wget http://nodejs.org/dist/v0.10.32/node-v0.10.32.tar.gz && \
+  tar zxf node-v0.10.32.tar.gz && \
+  cd node-v0.10.32 && \
   ./configure && \
   make && \
   make install
@@ -31,8 +31,11 @@ VOLUME ["/data"]
 # Define working directory.
 WORKDIR /data
 
+# Install node-gyp
+RUN export USER=root && npm install -g node-gyp
+
 # Install XPUSH Servers
-RUN export USER=root && mkdir -p /data && export HOME=/data && npm install -g xpush forever
+RUN export USER=root && mkdir -p /data && npm install -g xpush forever
 
 # Make xpush-session.sh
 RUN \
