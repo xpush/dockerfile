@@ -1,7 +1,7 @@
-## XPush server's Dockerfile
+## XPUSH server's Dockerfile
 
 
-This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node-xpush/dockerfile/) published to the public [Docker Registry](https://registry.hub.docker.com/).
+This repository contains **Dockerfile** of [XPUSH](https://github.com/xpush/node-xpush/dockerfile/) published to the public [Docker Registry](https://registry.hub.docker.com/).
 
 
 ### Installation
@@ -26,7 +26,7 @@ Create a config file in user directory ( name like `session.json` and `channel.j
 
 ##### 2. Run with already installed shell script
 
-	docker run -d -p 8000:8000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash -c xpush-session.sh
+	docker run -d -p 8000:8000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash xpush-session.sh
 
 >**Note**: installed shell script will run with options below.
 
@@ -40,7 +40,7 @@ Create a config file in user directory ( name like `session.json` and `channel.j
 
 ##### Run with already installed shell script
 
-	docker run -d -p 9000:9000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash -c xpush-channel.sh
+	docker run -d -p 9000:9000 -v /home/stalk/data:/data stalk/xpush:latest /bin/bash xpush-channel.sh
 
 >**Note**: installed shell script will run with options below.
 

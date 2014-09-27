@@ -1,7 +1,7 @@
-## XPush standalone server's Dockerfile
+## XPUSH standalone server's Dockerfile
 
 
-This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node-xpush/dockerfile/) published to the public [Docker Registry](https://registry.hub.docker.com/).
+This repository contains **Dockerfile** of [XPUSH](https://github.com/xpush/node-xpush/dockerfile/) published to the public [Docker Registry](https://registry.hub.docker.com/).
 
 
 ### Installation
@@ -17,8 +17,8 @@ This repository contains **Dockerfile** of [XPush](https://github.com/xpush/node
 
 #### Run `xpush standalone`
 
-	docker run -d --name xpush -p 8000:8000 -p 9000:9000 stalk/xpush:standalone
+	docker run -d --name xpush -p 8000:8000 -p 9000:9000 stalk/xpush:standalone /bin/bash xpush-stand-alone.sh --host sample.stalk.io
 
 #### Run `xpush standalone` with persistent data directory( /home/stalk/data )
 
-	docker run -d -p 8000:8000 -p 9000:9000 -v /home/stalk/data:/data --name xpush stalk/xpush:standalone
+	docker run -d -p 8000:8000 -p 9000:9000 -v /home/stalk/data:/data --name xpush stalk/xpush:standalone /bin/bash xpush-stand-alone.sh --host sample.stalk.io
