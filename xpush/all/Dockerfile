@@ -11,6 +11,8 @@ RUN \
   yum -y install wget && \
   yum -y install tar && \
   yum -y install gcc && \
+  yum -y install xz && \
+  yum -y install git && \
   yum -y install gcc-c++
 
 # Install java
@@ -26,13 +28,31 @@ RUN \
   cp zookeeper-3.4.6/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg
 
 # Install node.js
-RUN \
-  wget http://nodejs.org/dist/v0.10.32/node-v0.10.32.tar.gz && \
-  tar zxf node-v0.10.32.tar.gz && \
-  cd node-v0.10.32 && \
-  ./configure && \
-  make && \
-  make install
+# gpg keys listed at https://github.com/nodejs/node
+RUN set -ex \
+  && for key in \
+    9554F04D7259F04124DE6B476D5A82AC7E37093B \
+    94AE36675C464D64BAFA68DD7434390BDBE9B9C5 \
+    0034A06D9D9B0064CE8ADF6BF1747F4AD2306D93 \
+    FD3A5288F042B6850C66B31F09FE44734EB7990E \
+    71DCFD284A79C3B38668286BC97EC7A07EDE3FC1 \
+    DD8F2338BAE7501E3DD5AC78C273792F7D83545D \
+    B9AE9905FFD7803F25714661B63B535A4C206CA9 \
+    C4F0DFFF4E8C1A8236409D08E73BC641CC11F4C8 \
+  ; do \
+    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+  done
+
+ENV NPM_CONFIG_LOGLEVEL info
+ENV NODE_VERSION 4.5.0
+
+RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
+  && curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
+  && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
+  && grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 \
+  && rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
 # Install Redis.
 RUN \
@@ -51,25 +71,14 @@ RUN \
   sed -i 's/^\(dir .*\)$/# \1\ndir \/data/' /etc/redis/redis.conf && \
   sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
 
-# Install mongodb
-RUN \
-echo -e "\
-[mongodb]\n\
-name=MongoDB Repository\n\
-baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
-gpgcheck=0\n\
-enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
-
-RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir -p /data/log
-
-# Install imagemagick
-RUN yum -y install ImageMagick-c++ ImageMagick-c++-devel
-
 # Define mountable directories.
 VOLUME ["/data"]
 
 # Define working directory.
 WORKDIR /data
+
+RUN \
+  mkdir -p /var/logs/xpush
 
 # Install node-gyp
 RUN export USER=root && npm install -g node-gyp
@@ -86,7 +95,7 @@ printf "\
 cd /home/root/zookeeper-3.4.6/bin && \n\
 ./zkServer.sh start /etc/zookeeper/zoo.cfg \n\
 # Start redis \n\
-nohup redis-server /etc/redis/redis.conf > /data/log/redis.log 2>&1 < /dev/null & \n\
+nohup redis-server /etc/redis/redis.conf > /var/logs/xpush/redis.log 2>&1 < /dev/null & \n\
 \n\
 # Check redis is running \n\
 echo -ne \"Starting redis \" \n\
@@ -99,9 +108,7 @@ do\n\
 done\n\
 echo \"  STARTED\"\n\
 \n\
-# Start mongo\n\
-nohup mongod --smallfiles > /data/log/mongo.log 2>&1 < /dev/null &\n\
-\n\
+
 # Set HOST\n\
 while [ \"\$1\" != \"\" ]\n\
 do\n\
@@ -119,42 +126,25 @@ then\n\
 else\n\
   HOST=\"\"\n\
 fi\n\
-# Check mongo is running\n\
-echo -ne \"\\\nStarting mongodb \"\n\
-MAX_SEC=30\n\
-WATING_SEC=0\n\
-MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
-while [ \$WATING_SEC -le \$MAX_SEC -a \$MONGO_PROCESS_NUM -eq 0 ]\n\
-do\n\
-  echo -n .\n\
-  MONGO_PROCESS_NUM=\$(netstat -nap | grep 27017 | grep mongo | wc -l)\n\
-  sleep 1\n\
-  WATING_SEC=\$((WATING_SEC + 1))\n\
-done\n\
-echo \"  STARTED\"\n\
-\n\
+
 # Start xpush\n\
 cd /usr/local/lib/node_modules/xpush\n\
-nohup ./bin/xpush --config ./config-blank.json --port 8000 --data /data --session \$HOST > /data/log/session.log 2>&1 < /dev/null &\n\
-nohup ./bin/xpush --config ./config-blank.json --port 9000 --data /data \$HOST > /data/log/channel.log 2>&1 < /dev/null &\n\
+nohup ./bin/start  --port 8000 --home /data --session \$HOST > /var/logs/xpush/session.log 2>&1 < /dev/null &\n\
+nohup ./bin/start --port 9000 --channel --home /data \$HOST > /var/logs/xpush/channel.log 2>&1 < /dev/null &\n\
 echo -ne \"\\\nTailing log\"\n\
 sleep 1\n\
-tail -f /data/log/channel.log" > /usr/bin/xpush-stand-alone.sh
+tail -f /var/logs/xpush/channel.log" > /usr/bin/xpush-stand-alone.sh
 
 RUN chmod 775 /usr/bin/xpush-stand-alone.sh
 
 CMD /usr/bin/xpush-stand-alone.sh
 
 # Expose ports.
-#   - 27017 : mongodb process
-#   - 28017 : mongodb http
 #   - 6379  : redis process
 #   - 8000  : xpush session server
 #   - 9000  : xpush channel server
 #   - 2181  : zookeeper port
 #   - 22 : SSH PORT
-EXPOSE 27017
-EXPOSE 28017
 EXPOSE 6379
 EXPOSE 8000
 EXPOSE 9000
