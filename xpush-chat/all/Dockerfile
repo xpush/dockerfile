@@ -6,6 +6,10 @@
 
 FROM    centos:centos6
 
+RUN mkdir -p /applications/xpush-chat
+ENV XPUSH_HOME /applications/xpush-chat
+ENV APP_HOME /applications
+
 # Install packages
 RUN \
   yum -y install wget && \
@@ -20,12 +24,13 @@ RUN yum -y install java-1.7.0-openjdk.x86_64
 
 # Install zookeeper
 RUN \
-  mkdir -p /home/root && \
-  cd /home/root && \
-  wget http://apache.mirror.cdnetworks.com/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz && \
-  tar xvf zookeeper-3.4.6.tar.gz && \
+  mkdir -p ${APP_HOME} && \
+  cd ${APP_HOME} && \
+  wget http://apache.mirror.cdnetworks.com/zookeeper/zookeeper-3.4.9/zookeeper-3.4.9.tar.gz && \
+  tar xvf zookeeper-3.4.9.tar.gz && \
   mkdir -p /etc/zookeeper && \
-  cp zookeeper-3.4.6/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg
+  cp zookeeper-3.4.9/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg && \
+  mv zookeeper-3.4.9 zookeeper
 
 # Install node.js
 # gpg keys listed at https://github.com/nodejs/node
@@ -44,7 +49,7 @@ RUN set -ex \
   done
 
 ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 4.5.0
+ENV NODE_VERSION 6.9.1
 
 RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
   && curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
@@ -74,26 +79,28 @@ RUN \
 # Install mongodb
 RUN \
 echo -e "\
-[mongodb]\n\
+[mongodb-org-3.2]\n\
 name=MongoDB Repository\n\
-baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\n\
+baseurl=https://repo.mongodb.org/yum/redhat/6/mongodb-org/3.2/x86_64/\n\
 gpgcheck=0\n\
-enabled=1\n" >> /etc/yum.repos.d/mongodb.repo
+enabled=1\n" >> /etc/yum.repos.d/mongodb-org-3.2.repo
+
+RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir -p /data/log
 
 # Define mountable directories.
 VOLUME ["/data"]
 
 # Define working directory.
-WORKDIR /data
+WORKDIR ${XPUSH_HOME}
 
 RUN \
   mkdir -p /var/logs/xpush
 
-# Install node-gyp
-RUN export USER=root && npm install -g node-gyp
-
 # Install XPUSH Servers
-RUN export USER=root && npm install -g xpush forever
+RUN
+  cd ${XPUSH_HOME}
+  git clone git clone https://github.com/xpush/xpush-chat.git \n\
+  npm install
 
 # Make xpush-stand-alone.sh
 
@@ -118,7 +125,7 @@ done\n\
 echo \"  STARTED\"\n\
 \n\
 # Start mongo\n\
-nohup mongod --smallfiles > /var/logs/xpush/mongo.log 2>&1 < /dev/null &\n\
+mongod --smallfiles --fork --logpath /var/logs/mongo.log\n\
 \n\
 # Set HOST\n\
 while [ \"\$1\" != \"\" ]\n\
@@ -139,9 +146,9 @@ else\n\
 fi\n\
 
 # Start xpush\n\
-cd /usr/local/lib/node_modules/xpush\n\
-nohup ./bin/session-server  --port 8000 --home /data --session \$HOST > /var/logs/xpush/session.log 2>&1 < /dev/null &\n\
-nohup //bin/channel-server--port 9000 --home /data \$HOST > /var/logs/xpush/channel.log 2>&1 < /dev/null &\n\
+cd ${XPUSH_HOME}\n\
+nohup ./bin/session-server --port 8000 --home /data --session \$HOST > /var/logs/xpush/session.log 2>&1 < /dev/null &\n\
+nohup ./bin/channel-server --port 9000 --home /data \$HOST > /var/logs/xpush/channel.log 2>&1 < /dev/null &\n\
 echo -ne \"\\\nTailing log\"\n\
 sleep 1\n\
 tail -f /var/logs/xpush/channel.log" > /usr/bin/xpush-stand-alone.sh
