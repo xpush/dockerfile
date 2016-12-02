@@ -6,8 +6,8 @@
 
 FROM    centos:centos6
 
-RUN mkdir -p /applications/xpush-chat
-ENV XPUSH_HOME /applications/xpush-chat
+RUN mkdir -p /applications
+ENV XCHAT_HOME /applications/xpush-chat
 ENV APP_HOME /applications
 
 # Install packages
@@ -30,7 +30,8 @@ RUN \
   tar xvf zookeeper-3.4.9.tar.gz && \
   mkdir -p /etc/zookeeper && \
   cp zookeeper-3.4.9/conf/zoo_sample.cfg /etc/zookeeper/zoo.cfg && \
-  mv zookeeper-3.4.9 zookeeper
+  mv zookeeper-3.4.9 zookeeper && \
+  rm -rf zookeeper-3.4.9.tar.gz
 
 # Install node.js
 # gpg keys listed at https://github.com/nodejs/node
@@ -61,20 +62,34 @@ RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-
 
 # Install Redis.
 RUN \
+mkdir -p /etc/redis/run && mkdir -p /etc/redis/logs && mkdir -p /etc/redis/6379
+
+RUN \
   cd /tmp && \
   wget http://download.redis.io/redis-stable.tar.gz && \
   tar xvzf redis-stable.tar.gz && \
   cd redis-stable && \
   make && \
   make install && \
-  cp -f src/redis-sentinel /usr/local/bin && \
-  mkdir -p /etc/redis && \
-  cp -f *.conf /etc/redis && \
-  rm -rf /tmp/redis-stable* && \
-  sed -i 's/^\(bind .*\)$/# \1/' /etc/redis/redis.conf && \
-  sed -i 's/^\(daemonize .*\)$/# \1/' /etc/redis/redis.conf && \
-  sed -i 's/^\(dir .*\)$/# \1\ndir \/data/' /etc/redis/redis.conf && \
-  sed -i 's/^\(logfile .*\)$/# \1/' /etc/redis/redis.conf
+  cp -f src/redis-server /usr/local/bin
+
+# Create redis.conf
+RUN \
+printf "\
+bind 127.0.0.1 \n\
+protected-mode yes \n\
+port 6379 \n\
+tcp-backlog 511 \n\
+timeout 0 \n\
+tcp-keepalive 300 \n\
+daemonize yes \n\
+pidfile /etc/redis/run/6379.pid \n\
+loglevel notice \n\
+logfile /etc/redis/logs/6379.log \n\
+databases 16 \n\
+dbfilename dump.rdb \n\
+dir /etc/redis/6379 \n\
+" > /etc/redis/redis.conf
 
 # Install mongodb
 RUN \
@@ -91,27 +106,31 @@ RUN yum -y install mongodb-org && mkdir -p /data/db && mkdir -p /data/log
 VOLUME ["/data"]
 
 # Define working directory.
-WORKDIR ${XPUSH_HOME}
+WORKDIR ${APP_HOME}
 
 RUN \
   mkdir -p /var/logs/xpush
 
 # Install XPUSH Servers
-RUN
-  cd ${XPUSH_HOME}
-  git clone git clone https://github.com/xpush/xpush-chat.git \n\
+RUN \
+  cd ${APP_HOME} && \
+  git clone https://github.com/xpush/xpush-chat.git && \
+  cd xpush-chat && \
   npm install
 
-# Make xpush-stand-alone.sh
+# Install Forever
+RUN npm install -g forever
+
+# Make xchat-stand-alone.sh
 
 RUN \
 printf "\
 #!/usr/bin/env bash \n\
 #Start zookeeper \n\
-cd /home/root/zookeeper-3.4.6/bin && \n\
+cd ${APP_HOME}/zookeeper/bin && \n\
 ./zkServer.sh start /etc/zookeeper/zoo.cfg \n\
 # Start redis \n\
-nohup redis-server /etc/redis/redis.conf > /var/logs/xpush/redis.log 2>&1 < /dev/null & \n\
+redis-server /etc/redis/redis.conf \n\
 \n\
 # Check redis is running \n\
 echo -ne \"Starting redis \" \n\
@@ -125,6 +144,7 @@ done\n\
 echo \"  STARTED\"\n\
 \n\
 # Start mongo\n\
+echo -ne \"Starting mongo \" \n\
 mongod --smallfiles --fork --logpath /var/logs/mongo.log\n\
 \n\
 # Set HOST\n\
@@ -146,16 +166,16 @@ else\n\
 fi\n\
 
 # Start xpush\n\
-cd ${XPUSH_HOME}\n\
-nohup ./bin/session-server --port 8000 --home /data --session \$HOST > /var/logs/xpush/session.log 2>&1 < /dev/null &\n\
-nohup ./bin/channel-server --port 9000 --home /data \$HOST > /var/logs/xpush/channel.log 2>&1 < /dev/null &\n\
+cd ${XCHAT_HOME}\n\
+forever start -al /var/logs/xpush/session.log ./bin/session-server --port 8000 --home /data \n\
+forever start -al /var/logs/xpush/channel.log ./bin/channel-server --port 9000 --home /data \n\
 echo -ne \"\\\nTailing log\"\n\
 sleep 1\n\
-tail -f /var/logs/xpush/channel.log" > /usr/bin/xpush-stand-alone.sh
+tail -f /var/logs/xpush/channel.log" > /usr/bin/xchat-stand-alone.sh
 
-RUN chmod 775 /usr/bin/xpush-stand-alone.sh
+RUN chmod 775 /usr/bin/xchat-stand-alone.sh
 
-CMD /usr/bin/xpush-stand-alone.sh
+CMD /usr/bin/xchat-stand-alone.sh
 
 # Expose ports.
 #   - 6379  : redis process
